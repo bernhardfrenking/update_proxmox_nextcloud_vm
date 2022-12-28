@@ -55,47 +55,16 @@
         seconds: "{{ boot_time }}"
       when: (item.snapshot|default(false))
     
-    - name: Update VM {{ item.vm_name }} with apt
-      apt:
-        force_apt_get: yes
-        name: "*"
-        state: latest
-        update_cache: yes
+    - name: Update Nextcloud of {{ item.vm_name }}
       become: true
       delegate_to: "{{ item.vm_name }}"
-      when: vm_facts.ansible_facts.ansible_os_family == 'Debian'
+      command: sudo -u www-data php /var/www/nextcloud/updater/updater.phar --no-interaction
     
-    - name: Update VM {{ item.vm_name }} with yum
-      yum:
-        name: "*"
-        state: latest
-        update_cache: yes
-        lock_timeout: 120
+    - name: Update Apps of {{ item.vm_name }}
       become: true
       delegate_to: "{{ item.vm_name }}"
-      when: vm_facts.ansible_facts.ansible_os_family == 'RedHat'
+      command: sudo -u www-data php /var/www/nextcloud/occ app:update --all --no-interaction
 
-    - name: Install Prerequisite Packages for OpenSuse / SLES
-      package:
-        name:
-          - python-xml
-          - zypper
-          - rpm
-        state: present
-      become: true
-      delegate_to: "{{ item.vm_name }}"
-      when: vm_facts.ansible_facts.ansible_os_family == 'Suse'
-
-    - name: Update VM {{ item.vm_name }} with zypper
-      zypper:
-        name: "*"
-        state: latest
-        update_cache: yes
-        type: patch
-      become: true
-      delegate_to: "{{ item.vm_name }}"
-      when: vm_facts.ansible_facts.ansible_os_family == 'Suse'
-   
     - name: Shutdown VM {{ item.vm_name }} when it was stopped before patching
       uri:
         method: POST
